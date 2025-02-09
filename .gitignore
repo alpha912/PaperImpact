@@ -29,6 +29,7 @@ __pycache__/
 *.pyw
 *.pyc
 
-data/papers/
+data/papers/*.csv
+!data/papers/.gitkeep
 results/**/*.csv
 !results/comparative_analysis_*.csv
