@@ -415,7 +415,7 @@ Please be respectful and constructive in all interactions.
 If you use this project in your research, please cite it as follows:
 
 ```bibtex
-@misc{  ,
+@misc{paperimpact,
   author = {Tom, Alphin and {0000-0003-3787-8370}},
   title = {PaperImpact: A Comprehensive System for Analyzing the Impact of Scientific Publications},
   year = {2025},
@@ -423,7 +423,7 @@ If you use this project in your research, please cite it as follows:
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/alpha912/PaperImpact}},
 
-  note = {Email: alphin\@researchark.eu}
+  note = {Email: alphin@researchark.eu}
 
 }
 ```
