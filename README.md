@@ -47,8 +47,9 @@ This project provides a robust and comprehensive system for analyzing the impact
 14. [License](#license)
 15. [Contributing](#contributing)
 16. [Code of Conduct](#code-of-conduct)
-17. [Acknowledgements](#acknowledgements)
-18. [Citation](#citation)
+17. [Security](#security)
+18. [Acknowledgements](#acknowledgements)
+19. [Citation](#citation)
 
 ## Features
 
@@ -67,7 +68,6 @@ This project provides a robust and comprehensive system for analyzing the impact
 ## Project Structure
 
 ```
-.
 ├── .gitignore                  # Specifies intentionally untracked files
 ├── LICENSE                     # MIT License file
 ├── README.md                   # This file
@@ -85,12 +85,12 @@ This project provides a robust and comprehensive system for analyzing the impact
 │   ├── publication_volume.png  # Visualization of publication volume
 │   ├── international_collab.png # Visualization of international collaboration
 │   ├── average_citations.png   # Visualization of average citations
-    └── journal_quality.png    # Visualization of journal quality distribution
+    └── journal_quality.png     # Visualization of journal quality distribution
 └── src/
     ├── __init__.py             # Empty file to make 'src' a package
     ├── logger.py               # Custom logging class (PrettyLogger)
     └── impact_scorer.py        # (Unused) older scoring class.
-    └── run_analysis.py         # Main script for analysis
+└── run_analysis.py             # Main script for analysis
 ```
 
 ## Installation and Setup
@@ -393,16 +393,13 @@ The codebase is designed to be easily extensible:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.  See also our [SECURITY.md](SECURITY.md) policy.
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are welcome! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) guidelines.
 
-1.  Fork the repository.
-2.  Create a new branch for your feature or bug fix.
-3.  Make your changes and commit them with clear messages.
-4.  Create a pull request.
+We maintain a [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) to ensure a welcoming and inclusive environment for all contributors.
 
 ## Code of Conduct
 
@@ -426,7 +423,7 @@ If you use this project in your research, please cite it as follows:
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/alpha912/PaperImpact}},
 
-  note = {Email: alphin@researchark.eu}
+  note = {Email: alphin\@researchark.eu}
 
 }
 ```
