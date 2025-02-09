@@ -30,3 +30,5 @@ __pycache__/
 *.pyc
 
 data/papers/
+results/**/*.csv
+!results/comparative_analysis_*.csv

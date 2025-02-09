@@ -10,6 +10,7 @@ import seaborn as sns
 from typing import Dict, List, Tuple, Any
 from src.logger import PrettyLogger
 from tqdm import tqdm  # Add this import
+import glob
 
 class JournalImpactAnalyzer:
     def __init__(self, scimago_path: str, logger: PrettyLogger):
@@ -38,6 +39,11 @@ class JournalImpactAnalyzer:
         self.journal_ranks = {}
         if 'Rank' in self.scimago_df.columns:
             self.journal_ranks = dict(zip(self.scimago_df['Title'], self.scimago_df['Rank']))
+        
+        self.global_max_citations = 0
+        self.global_top_cited_paper = None
+        self.global_top_journal = None
+        self.global_journal_papers = defaultdict(list)
     
     def _load_scimago_data(self, path: str) -> pd.DataFrame:
         """Load and prepare SCImago journal rankings data"""
@@ -106,8 +112,6 @@ class JournalImpactAnalyzer:
         """
         if not os.path.exists(papers_path):
             raise FileNotFoundError(f"Papers file not found: {papers_path}")
-        
-        self.logger.progress(f"Processing papers from {papers_path}")
         
         # Read CSV with low_memory=False to prevent dtype warnings
         df = pd.read_csv(papers_path, encoding='utf-8', low_memory=False)
@@ -238,11 +242,10 @@ class JournalImpactAnalyzer:
         
         # 2. Citation Impact
         if 'citation_count' in df.columns:
-            max_citations = df['citation_count'].max()
-            if max_citations > 0:
-                scores['citation_impact'] = (
-                    np.log1p(df['citation_count']) / np.log1p(max_citations)
-                ) * 30
+            scores['citation_impact'] = (
+                np.log1p(df['citation_count']) / 
+                np.log1p(self.global_max_citations)
+            ) * 30
         
         # 3. Recency Impact
         if 'year' in df.columns:
@@ -360,6 +363,36 @@ class JournalImpactAnalyzer:
                 'year_distribution': results['year'].value_counts().to_dict()
             }
         
+        # Add citation statistics
+        if 'citation_count' in results.columns:
+            report['avg_citations'] = results['citation_count'].mean()
+        else:
+            report['avg_citations'] = 0.0
+        
+        # Add journal statistics
+        journal_stats = {'q1_percent': 0, 'q2_percent': 0, 'q3_percent': 0, 'q4_percent': 0, 'unranked_percent': 0}
+        total_journals = len(results['journal_title'].unique())
+        
+        if total_journals > 0:
+            quartile_counts = defaultdict(int)
+            for journal_title in results['journal_title'].unique():
+                journal_data = self.match_journal(journal_title)
+                if journal_data is not None and 'SJR Best Quartile' in journal_data:
+                    quartile_counts[journal_data['SJR Best Quartile']] += 1
+                else:
+                    quartile_counts['unranked'] += 1
+            
+            # Calculate percentages
+            journal_stats = {
+                'q1_percent': (quartile_counts.get('Q1', 0) / total_journals) * 100,
+                'q2_percent': (quartile_counts.get('Q2', 0) / total_journals) * 100,
+                'q3_percent': (quartile_counts.get('Q3', 0) / total_journals) * 100,
+                'q4_percent': (quartile_counts.get('Q4', 0) / total_journals) * 100,
+                'unranked_percent': (quartile_counts.get('unranked', 0) / total_journals) * 100
+            }
+        
+        report['journal_stats'] = journal_stats
+        
         return report
 
     def generate_visualizations(self, country_reports: Dict[str, Dict], output_dir: str):
@@ -441,6 +474,97 @@ class JournalImpactAnalyzer:
         plt.savefig(os.path.join(output_dir, 'international_collab.png'))
         plt.close()
 
+    def find_global_reference_points(self, papers_dir: str):
+        """Analyze all paper files to find global reference points"""
+        self.logger.header("Finding Global Reference Points")
+        
+        all_papers = []
+        # Add progress tracking for file loading
+        paper_files = glob.glob(os.path.join(papers_dir, "*_papers.csv"))
+        self.logger.progress(f"Loading papers from {len(paper_files)} countries")
+        
+        for paper_file in tqdm(paper_files, desc="Loading country files"):
+            country = os.path.basename(paper_file).replace('_papers.csv', '')
+            try:
+                df = pd.read_csv(paper_file, low_memory=False)  # Add low_memory=False to prevent warnings
+                df['country'] = country
+                all_papers.append(df)
+            except Exception as e:
+                self.logger.warning(f"Error loading {country}: {str(e)}")
+        
+        if not all_papers:
+            raise ValueError("No paper data could be loaded")
+            
+        combined_df = pd.concat(all_papers, ignore_index=True)
+        self.logger.info(f"Loaded total {len(combined_df):,} papers")
+        
+        # Find top cited paper
+        citations_col = 'Cited by' if 'Cited by' in combined_df.columns else 'citation_count'
+        self.global_max_citations = combined_df[citations_col].max()
+        top_cited = combined_df.loc[combined_df[citations_col].idxmax()]
+        
+        self.logger.section("Most Cited Paper")
+        self.logger.info(f"Citations: {int(self.global_max_citations):,}")
+        self.logger.info(f"Title: {top_cited.get('Title', 'N/A')}")
+        self.logger.info(f"Journal: {top_cited.get('Source title', 'N/A')}")
+        self.logger.info(f"Year: {int(top_cited.get('Year', 0))}")
+        self.logger.info(f"Country: {top_cited['country']}")
+        self.logger.info(f"DOI: {top_cited.get('DOI', 'N/A')}")
+        
+        # Find top ranked journal with progress tracking
+        self.logger.section("Analyzing Journal Rankings")
+        journal_rankings = {}
+        unique_journals = combined_df['Source title'].unique()
+        
+        for journal_title in tqdm(unique_journals, desc="Analyzing journals"):
+            journal_data = self.match_journal(journal_title)
+            if journal_data is not None:
+                papers = combined_df[combined_df['Source title'] == journal_title]
+                journal_rankings[journal_title] = {
+                    'rank': journal_data['SJR'],
+                    'h_index': journal_data['H index'],
+                    'quartile': journal_data.get('SJR Best Quartile', 'N/A'),
+                    'numerical_rank': journal_data.get('Rank', 'N/A'),  # Add numerical rank
+                    'paper_count': len(papers),
+                    'countries': set(papers['country'].unique()),
+                    'total_citations': papers[citations_col].sum()
+                }
+        
+        if not journal_rankings:
+            self.logger.warning("No journals could be matched with SCImago database")
+            return self.global_max_citations, None
+            
+        # Find top journal
+        top_journal = max(journal_rankings.items(), key=lambda x: x[1]['rank'])
+        self.global_top_journal = {
+            'title': top_journal[0],
+            'sjr': top_journal[1]['rank'],
+            'h_index': top_journal[1]['h_index'],
+            'quartile': top_journal[1]['quartile'],
+            'numerical_rank': top_journal[1]['numerical_rank'],  # Add numerical rank
+            'paper_count': top_journal[1]['paper_count'],
+            'countries': list(top_journal[1]['countries']),
+            'total_citations': top_journal[1]['total_citations']
+        }
+        
+        self.logger.section("Highest Ranked Journal")
+        self.logger.info(f"Journal: {self.global_top_journal['title']}")
+        self.logger.info(f"SJR Score: {self.global_top_journal['sjr']:.3f}")
+        self.logger.info(f"Rank: ({self.global_top_journal['numerical_rank']}) | {self.global_top_journal['quartile']}")  # Modified rank display
+        self.logger.info(f"H-index: {self.global_top_journal['h_index']}")
+        self.logger.info(f"Number of Papers: {self.global_top_journal['paper_count']}")
+        self.logger.info(f"Total Citations: {self.global_top_journal['total_citations']:,}")
+        self.logger.info(f"Countries: {', '.join(sorted(self.global_top_journal['countries']))}")
+        
+        # Store for later use in impact calculations
+        self.reference_stats = {
+            'max_citations': self.global_max_citations,
+            'top_journal_sjr': self.global_top_journal['sjr'],
+            'top_journal_h_index': self.global_top_journal['h_index']
+        }
+        
+        return self.global_max_citations, self.global_top_journal
+
 def plot_comparative_analysis(results_by_country):
     """Plot comparative analysis with matplotlib instead of seaborn"""
     try:
@@ -501,6 +625,10 @@ def main():
         
         # Initialize analyzer
         analyzer = JournalImpactAnalyzer(args.scimago, logger)
+        
+        # Find global reference points before processing individual countries
+        max_citations, top_journal = analyzer.find_global_reference_points(args.papers_dir)
+        
         country_reports = {}
         
         # Get list of paper files to process
@@ -514,13 +642,17 @@ def main():
         
         logger.header("Journal Impact Score Analysis")
         
-# Process each country's data
+        # Process each country's data
         for paper_file in paper_files:
             country_name = os.path.splitext(os.path.basename(paper_file))[0].replace('_papers', '')
             try:
-                logger.progress(f"Processing {country_name.upper()}")
+                # Add a subheader for each country
+                logger.header(f"Analysis for {country_name.upper()}", sub=True)  # The subheader will now be visible
                 
-                # Create country-specific output directory
+                # Keep only one progress message
+                logger.progress(f"Processing papers from {paper_file}")
+                
+                # Rest of the existing code...
                 country_output_dir = os.path.join(args.output, country_name)
                 os.makedirs(country_output_dir, exist_ok=True)
                 

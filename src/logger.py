@@ -23,12 +23,18 @@ class PrettyLogger:
         if hasattr(self, 'file_handler'):
             self.file_handler.close()
         
-    def header(self, text: str):
+    def header(self, text: str, sub: bool = False):
         """Print a beautiful header with borders"""
         width = 60
-        print(f"\n{Fore.CYAN}{'='*width}")
-        print(f"{text.center(width)}")
-        print(f"{'='*width}{Style.RESET_ALL}")
+        if not sub:
+            print(f"\n{Fore.CYAN}{'='*width}")
+            print(f"{text.center(width)}")
+            print(f"{'='*width}{Style.RESET_ALL}")
+        else:
+            # Make sub-headers more visible with different style
+            print(f"\n{Fore.YELLOW}{'▒'*width}")  # Use different border character
+            print(f"{Fore.YELLOW}{text.center(width)}")
+            print(f"{'▒'*width}{Style.RESET_ALL}")
         
     def section(self, text: str):
         """Print a section header"""
@@ -85,6 +91,24 @@ class PrettyLogger:
             # Basic stats with enhanced details
             print(f"   {'Total papers'.ljust(max_label_length)} │ {total_papers:,}")
             print(f"   {'Average impact score'.ljust(max_label_length)} │ {Fore.YELLOW}{float(stats.get('avg_impact_score', 0)):.2f} / 100{Style.RESET_ALL}")
+            
+            # Add citation and journal rank statistics
+            print("\n   Publication Impact Metrics:")
+            print(f"   {'Average citations per paper'.ljust(max_label_length)} │ {float(stats.get('avg_citations', 0)):.1f}")
+            
+            # Journal rank statistics
+            journal_stats = stats.get('journal_stats', {})
+            print(f"\n   Journal Quality Distribution (SCImago Quartiles):")
+            print(f"   {'Q1 journals - Top 25% in field (%)'.ljust(max_label_length)} │ {float(journal_stats.get('q1_percent', 0)):.1f}%")
+            print(f"   {'Q2 journals - Top 25-50% in field (%)'.ljust(max_label_length)} │ {float(journal_stats.get('q2_percent', 0)):.1f}%")
+            print(f"   {'Q3 journals - Bottom 25-50% in field (%)'.ljust(max_label_length)} │ {float(journal_stats.get('q3_percent', 0)):.1f}%")
+            print(f"   {'Q4 journals - Bottom 25% in field (%)'.ljust(max_label_length)} │ {float(journal_stats.get('q4_percent', 0)):.1f}%")
+            print(f"   {'Unranked journals (%)'.ljust(max_label_length)} │ {float(journal_stats.get('unranked_percent', 0)):.1f}%")
+            print(f"\n   {Fore.CYAN}Note: Q1-Q4 represent journal quality quartiles in their field:{Style.RESET_ALL}")
+            print(f"   - Q1: Top 25% of journals in the field")
+            print(f"   - Q2: Between top 25% and 50%")
+            print(f"   - Q3: Between bottom 25% and 50%")
+            print(f"   - Q4: Bottom 25% of journals")
             
             # Highest scoring paper details with improved formatting
             print(f"\n   {'Highest impact paper'.ljust(max_label_length)} │ {Fore.GREEN}{float(stats.get('highest_score', 0)):.2f}{Style.RESET_ALL}")
