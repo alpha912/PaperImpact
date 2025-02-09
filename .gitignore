@@ -28,3 +28,5 @@ __pycache__/
 *.pyz
 *.pyw
 *.pyc
+
+data/papers/
