@@ -1,4 +1,4 @@
-# Journal Impact Analyzer
+# PaperImpact: A Comprehensive System for Analyzing the Impact of Scientific Publications
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/release/python-370/)
@@ -418,13 +418,14 @@ Please be respectful and constructive in all interactions.
 If you use this project in your research, please cite it as follows:
 
 ```bibtex
-@misc{journalimpactanalyzer,
-  author = {Alphin Tom and {0000-0003-3787-8370}},
-  title = {Journal Impact Analyzer},
-  year = {2024},
+@misc{  ,
+  author = {Tom, Alphin and {0000-0003-3787-8370}},
+  title = {PaperImpact: A Comprehensive System for Analyzing the Impact of Scientific Publications},
+  year = {2025},
   publisher = {GitHub},
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/alpha912/PaperImpact}},
+
   note = {Email: alphin@researchark.eu}
 
 }
