@@ -1,0 +1,9 @@
+pandas>=2.2.3
+numpy>=2.2.2
+colorama>=0.4.6
+scikit-learn>=1.6.1
+tqdm>=4.67.1
+matplotlib>=3.10.0
+seaborn>=0.13.2
+thefuzz>=0.22.1
+python-Levenshtein>=0.26.1
