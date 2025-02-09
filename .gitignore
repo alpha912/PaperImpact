@@ -13,3 +13,18 @@ venv/
 
 # Ignore dependencies
 node_modules/
+
+# Ignore pycache folders
+__pycache__/
+
+# Ignore any other files or folders for a Python project
+*.pyo
+*.pyd
+*.pyz
+*.pyw
+*.pyc
+*.pyo
+*.pyd
+*.pyz
+*.pyw
+*.pyc
