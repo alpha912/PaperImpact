@@ -474,6 +474,85 @@ class JournalImpactAnalyzer:
         plt.savefig(os.path.join(output_dir, 'international_collab.png'))
         plt.close()
 
+        # 4. Average Citations
+        plt.figure()
+        data = [(country, report['avg_citations']) 
+                for country, report in country_reports.items()]
+        countries, citations = zip(*sorted(data, key=lambda x: x[1], reverse=True))
+        
+        bars = plt.bar(countries, citations)
+        plt.title('Average Citations per Paper by Country', pad=20)
+        plt.xlabel('Country')
+        plt.ylabel('Average Citations')
+        plt.xticks(rotation=45, ha='right')
+        
+        for bar in bars:
+            height = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{height:.1f}',
+                    ha='center', va='bottom')
+            
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'average_citations.png'))
+        plt.close()
+
+        # 5. Journal Quality Distribution
+        plt.figure(figsize=(14, 7))
+        countries = []
+        q1_pcts = []
+        q2_pcts = []
+        q3_pcts = []
+        q4_pcts = []
+        unranked_pcts = []
+
+        for country, report in sorted(country_reports.items(), 
+                                    key=lambda x: x[1]['journal_stats']['q1_percent'], 
+                                    reverse=True):
+            stats = report['journal_stats']
+            countries.append(country)
+            q1_pcts.append(stats['q1_percent'])
+            q2_pcts.append(stats['q2_percent'])
+            q3_pcts.append(stats['q3_percent'])
+            q4_pcts.append(stats['q4_percent'])
+            unranked_pcts.append(stats['unranked_percent'])
+
+        width = 0.15
+        x = np.arange(len(countries))
+
+        fig, ax = plt.subplots(figsize=(14, 7))
+        rects1 = ax.bar(x - width*2, q1_pcts, width, label='Q1 (Top 25%)', color='#2ecc71')
+        rects2 = ax.bar(x - width, q2_pcts, width, label='Q2 (25-50%)', color='#3498db')
+        rects3 = ax.bar(x, q3_pcts, width, label='Q3 (50-75%)', color='#f1c40f')
+        rects4 = ax.bar(x + width, q4_pcts, width, label='Q4 (Bottom 25%)', color='#e74c3c')
+        rects5 = ax.bar(x + width*2, unranked_pcts, width, label='Unranked', color='#95a5a6')
+
+        ax.set_title('Journal Quality Distribution by Country', pad=20)
+        ax.set_xlabel('Country')
+        ax.set_ylabel('Percentage of Publications')
+        ax.set_xticks(x)
+        ax.set_xticklabels(countries, rotation=45, ha='right')
+        ax.legend()
+
+        # Add percentage labels on top of each bar
+        def autolabel(rects):
+            for rect in rects:
+                height = rect.get_height()
+                if height > 0:  # Only show label if there's a visible bar
+                    ax.text(rect.get_x() + rect.get_width()/2., height,
+                            f'{height:.1f}%',
+                            ha='center', va='bottom', rotation=0,
+                            fontsize=8)
+
+        autolabel(rects1)
+        autolabel(rects2)
+        autolabel(rects3)
+        autolabel(rects4)
+        autolabel(rects5)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, 'journal_quality.png'))
+        plt.close()
+
     def find_global_reference_points(self, papers_dir: str):
         """Analyze all paper files to find global reference points"""
         self.logger.header("Finding Global Reference Points")
